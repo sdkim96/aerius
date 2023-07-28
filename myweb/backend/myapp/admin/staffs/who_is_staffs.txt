@@ -1,0 +1,5 @@
+admin1:a1233a1233+++,level:superuser
+staff1:a1233a1233+++,level:high_staff 
+staff2:wejoi4279!,level:high_staff
+staff3:znvoae1313@,level:low_staff
+staff4:wrwzmlpq54+,level:low_staff

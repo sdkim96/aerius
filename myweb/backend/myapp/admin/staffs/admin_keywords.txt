@@ -1,0 +1,4 @@
+sudo
+super
+관리자
+admin
