@@ -51,6 +51,9 @@ class CheckUserViewSet(APIView):
                 return Response({"error" : "유저아이디와 닉네임 둘다 중복됩니다."})
 
 
+from rest_framework.permissions import AllowAny
+
+
 class LoginViewSet(APIView):
     authentication_classes = []  # Here: don't use any authentication for this view
     permission_classes = [AllowAny]  # And allow any user (authenticated or not) to access this view
@@ -101,6 +104,7 @@ class LogoutViewSet(APIView):
         else:
             logger.error("Internal server error while removing token")
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         
 
 

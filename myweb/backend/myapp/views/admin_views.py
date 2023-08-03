@@ -59,12 +59,12 @@ class ProductRegisterView(APIView):
     
 
 
-
 class ProductReadallView(ListAPIView):
-    # authentication_classes = []  # Here: don't use any authentication for this view
-    # permission_classes = [AllowAny]
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    authentication_classes = []  # Uncomment this if you want to add authentication
+    permission_classes = [AllowAny]  # Uncomment this if you want to add permissions
+
 
 
 class ProductReadOneView(RetrieveAPIView):

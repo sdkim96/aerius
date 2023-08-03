@@ -1,11 +1,12 @@
 from secrets import token_hex
 from django.utils import timezone
 from datetime import datetime, timedelta, timezone
-from ..models import User, CustomToken
+from ..models import *
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 import jwt
 import logging
+from ..admin.work_required_level import work_required_level
 
 logger = logging.getLogger(__name__)
 
@@ -13,21 +14,53 @@ class TokenFactory:
 
     @staticmethod
     def create_token(user):
+        level = 0
+
+        try:
+            staff = Staff.objects.get(staff_user = user)
+            if staff.is_superuser:
+                level = 3
+            elif staff.is_high_staff:
+                level = 2
+            elif staff.is_low_staff:
+                level = 1
+        except Staff.DoesNotExist:
+            pass  # If the user is not a staff, do nothing and use the default level (0)
+
+
         payload = {
             'user_id': user.userid,  
-            'exp': datetime.now(timezone.utc).replace(microsecond=0) + timedelta(hours=1)
+            'exp': datetime.now(timezone.utc).replace(microsecond=0) + timedelta(hours=1),
+            'level': level  # Use the level determined above
         }
-        token = jwt.encode(payload, 'settings.SECRET_KEY', algorithm='HS256')
+        token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
         exp = (datetime.now(timezone.utc) + timedelta(hours=1)).replace(microsecond=0)
         
         return token, exp
+    
 
+    # work는 string 형태어야함
+    @staticmethod
+    def is_authorized(token, work):
 
+        if not TokenFactory.check_token(token):
+            return False
+        
+        decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        level = decoded.get('level')
+
+        if level >= work_required_level.get(work):
+            return True  
+        else:
+            return False
+    
+
+    # 토큰의 유효성을 판단함
     @staticmethod
     def check_token(token):
 
         now = datetime.now(timezone.utc)
-        decoded = jwt.decode(token, 'settings.SECRET_KEY', algorithms=['HS256'])
+        decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         exp = datetime.fromtimestamp(decoded.get('exp'), tz=timezone.utc).replace(microsecond=0)
 
         try:
@@ -48,7 +81,7 @@ class TokenFactory:
     @staticmethod
     def remove_token(token):
         try:
-            decoded = jwt.decode(token, 'settings.SECRET_KEY', algorithms=['HS256'])
+            decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             userid = decoded.get('user_id')
             user = User.objects.get(userid=userid)  # Retrieve the User instance
             exp = datetime.fromtimestamp(decoded.get('exp'), tz=timezone.utc).replace(microsecond=0)
