@@ -59,6 +59,7 @@ class Preprocess:
     
 
     def initialize_tokenizer(self, texts):
+        # oov_token = "<OOV>"
         self.tokenizer.fit_on_texts(texts)
 
     
