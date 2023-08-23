@@ -36,7 +36,7 @@ class NerModel:
         padded_seqs = pad_sequences([q2v], maxlen=95, padding='post')
         print([padded_seqs])
         predict = self.model.predict(padded_seqs)
-        predict_class = tf.math.argmax(predict, axis=1).numpy()[0]
+        predict_class = tf.math.argmax(predict, axis=2).numpy()[0]
         return predict_class
     
     def predict_proba(self, query):

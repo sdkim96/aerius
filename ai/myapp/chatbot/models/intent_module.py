@@ -34,6 +34,8 @@ class IntentModel:
     def predict_class(self, query):
         preprocessed = self.p.delete_intent_trash_tags(sentence=query)
         word, _ = self.p.divide_words_tags(preprocessed)
+        print(word)
+        
         sequence = self.tokenizer.texts_to_sequences([' '.join(word)])
         padded_seqs = pad_sequences(sequence, maxlen=INTENT_MAX_SEQ_LEN, padding='post')
 
