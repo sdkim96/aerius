@@ -4,7 +4,6 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.text import Tokenizer, tokenizer_from_json
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import json
-import numpy as np
 
 class NerModel:
     def __init__(self, model, preprocess, tokenizer_path):
@@ -26,6 +25,7 @@ class NerModel:
         word, _ = self.p.divide_words_tags(preprocessed)
         
         q2v = []
+        print(word)
         for w in word:
             if w in self.my_tokenizer:
                 q2v.append(self.my_tokenizer[w])
@@ -35,11 +35,9 @@ class NerModel:
         print([q2v])
         padded_seqs = pad_sequences([q2v], maxlen=95, padding='post')
         print([padded_seqs])
-        predict = self.model.predict(np.array([padded_seqs[0]]))
-        predict_class = tf.math.argmax(predict, axis=1)
-
-        tags=[self.labels[i] for i in predict_class.numpy()[0]]
-        return tags
+        predict = self.model.predict(padded_seqs)
+        predict_class = tf.math.argmax(predict, axis=1).numpy()[0]
+        return predict_class
     
     def predict_proba(self, query):
         preprocessed = self.p.delete_intent_trash_tags(sentence=query)
