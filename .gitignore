@@ -2,3 +2,11 @@
 /myweb/backend/node_modules/
 /myweb/backend/backend/
 /myweb/backend/media
+/fastapivenv/
+/ai/aibackend/settings.py
+/ai/alembic/
+/ai/alembic.ini
+__pycache__/
+*.pyc
+*.pyo
+

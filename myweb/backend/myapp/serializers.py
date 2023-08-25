@@ -22,6 +22,12 @@ class UserLoginSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
 
+class WhoAreYouSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['userid', 'password', 'nickname', 'email', 'phone', 'created_at']
+
+
 
 # 2. Message 모델 검증하는 클래스
 class MessageSerializer(serializers.ModelSerializer):
