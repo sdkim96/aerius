@@ -20,25 +20,37 @@ class NerModel:
         }
 
 
+    def _format_results(self, words, tags):
+        ner_relevant = tags[:len(words)]
+        result = {word: tag for word, tag in zip(words, ner_relevant)}
+
+        return result
+
+
     def predict_class(self, query):
         preprocessed = self.p.delete_intent_trash_tags(sentence=query)
         word, _ = self.p.divide_words_tags(preprocessed)
         
         q2v = []
-        print(word)
+        # print(word)
         for w in word:
             if w in self.my_tokenizer:
                 q2v.append(self.my_tokenizer[w])
             else:
                 q2v.append(1)  # Assuming 1 is the "UNK" token in your tokenizer dictionary
 
-        print([q2v])
+        # print([q2v])
         padded_seqs = pad_sequences([q2v], maxlen=95, padding='post')
-        print([padded_seqs])
+        # print([padded_seqs])
         predict = self.model.predict(padded_seqs)
         predict_class = tf.math.argmax(predict, axis=2).numpy()[0]
-        return predict_class
+
+        # print(predict_class)
+
+        res = self._format_results(word, predict_class)
+        return res
     
+
     def predict_proba(self, query):
         preprocessed = self.p.delete_intent_trash_tags(sentence=query)
         word, _ = self.p.divide_words_tags(preprocessed)

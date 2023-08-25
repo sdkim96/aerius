@@ -33,8 +33,40 @@ def get_userid(authorization: str = Header(None)) -> str:
         print(userid)
     return userid
 
-def making_response():
-    pass
+def making_response(name, intent, ner):
+    intents = {
+        0: "주문",
+        1: "배송",
+        2: "매장",
+        3: "AS",
+        4: "제품_정보",
+        5: "제품_재고"
+    }
+    
+    # 기본 응답 설정
+    response = f"{name}님, 안녕하세요. {intents[intent]} 확인을 원하시는군요. "
+    
+    # 조건에 따라 응답을 추가로 생성
+    if 1 in ner.values() and intent == 1:
+        delivery_time = ' '.join([k for k, v in ner.items() if v == 1])
+        response += f"당신의 배송시간은 {delivery_time}에 맞춰 진행하겠습니다."
+    elif 3 in ner.values() and intent == 2:
+        location = ' '.join([k for k, v in ner.items() if v == 3])
+        response += f"가까운 매장은 {location}에 위치해 있습니다."
+    elif 4 in ner.values() and intent == 4:
+        product = ' '.join([k for k, v in ner.items() if v == 4])
+        response += f"{product}에 대한 정보를 알려드리겠습니다."
+    elif 5 in ner.values() and intent == 5:
+        size = ' '.join([k for k, v in ner.items() if v == 5])
+        response += f"{size} 사이즈의 재고를 확인해 드리겠습니다."
+    else:
+        response += "자세한 사항은 고객센터로 문의해주세요."
+        
+    return response
+
+
+
+    
 
 
 
@@ -47,14 +79,19 @@ async def post_query(chatbot_query: ChatbotQuery, userid: str = Depends(get_user
                 preprocess=p, tokenizer_path='/home/azureuser/projects/aerius/ai/myapp/chatbot/models/tokenizers/230817_intent_labeled_by_6_tokenizer.json')
     ner = NerModel(model='/home/azureuser/projects/aerius/ai/myapp/chatbot/models/models/230823_ner_model.h5',
                 preprocess=p, tokenizer_path='/home/azureuser/projects/aerius/ai/myapp/chatbot/models/tokenizers/230822_ner_tagging_tokenizer.json')
-    
+
     ner_predict= ner.predict_class(q)
     intent_predict= intent.predict_class(q)
 
+    print('ner : ',ner_predict)
+    print('ner type : ',type(ner_predict))
+    print('intent : ',intent_predict)
+    print('intent type : ',type(intent_predict))
+
     crud = Crud(table=Chatbot)
     new_chatbot_instance = Chatbot(name=userid, query=q, 
-                                   intent=intent_predict,
-                                   ner = ner_predict)  # Chatbot 모델의 인스턴스 생성
+                                    intent=intent_predict,
+                                    ner = ner_predict)  # Chatbot 모델의 인스턴스 생성
 
 
     try:
@@ -64,6 +101,7 @@ async def post_query(chatbot_query: ChatbotQuery, userid: str = Depends(get_user
         print(e)
         return {"error": str(e)}
     
-    response_text = f"You said: 데이터베이스에 잘 저장이 되었어요"  # 예시 응답
-    return {"response": response_text}
+    response=making_response(name=userid, intent=intent_predict, ner=ner_predict)
+
+    return {"response": response}
 
