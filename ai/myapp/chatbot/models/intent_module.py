@@ -1,7 +1,7 @@
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras import preprocessing
 import tensorflow as tf
-from ai.backend.settings import INTENT_MAX_SEQ_LEN
+from ai.aibackend.settings import INTENT_MAX_SEQ_LEN
 from tensorflow.keras.preprocessing.text import Tokenizer, tokenizer_from_json
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import json
