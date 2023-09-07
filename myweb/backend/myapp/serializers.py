@@ -57,6 +57,56 @@ class ProductImageSerializer(serializers.ModelSerializer):
         fields = ['image']
 
 
+class ProductCreateSerializer(serializers.ModelSerializer):
+    type_id = serializers.IntegerField(write_only=True)
+    size_id = serializers.IntegerField(write_only=True)
+    main_image = serializers.ImageField(write_only=True)
+    switching_image = serializers.ImageField(write_only=True)
+    sub_images = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True
+    )
+
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'type_id', 'price', 'size_id', 'count', 'info', 'main_image', 'switching_image', 'sub_images']
+
+    def create(self, validated_data):
+        type_id = validated_data.pop('type_id')
+        size_id = validated_data.pop('size_id')
+        main_image_data = validated_data.pop('main_image')
+        switching_image_data = validated_data.pop('switching_image')
+        sub_images_data = validated_data.pop('sub_images')
+
+        product_type = Product_Type.objects.get(id=type_id)
+        product_size = Product_Size.objects.get(id=size_id)
+
+        product = Product.objects.create(
+            type=product_type,
+            size=product_size,
+            **validated_data
+        )
+
+        ProductImage.objects.create(
+            image=main_image_data,
+            product=product
+        )
+
+        ProductImage.objects.create(
+            image=switching_image_data,
+            product=product
+        )
+
+        for sub_image_data in sub_images_data:
+            ProductImage.objects.create(
+                image=sub_image_data,
+                product=product
+            )
+
+        return product
+
+
+
 class ProductSerializer(serializers.ModelSerializer):
     type = ProductTypeSerializer(read_only=True)
     size = ProductSizeSerializer(read_only=True)

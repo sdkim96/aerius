@@ -1,10 +1,13 @@
 from rest_framework import viewsets,status
-from ..models import Each_Product
+from ..models import *
 from ..serializers import *
+from rest_framework.permissions import AllowAny
+from rest_framework.generics import ListAPIView
 
-class StoreViewSet(viewsets.ModelViewSet):
-    queryset = Each_Product.objects.all()
-    # each_product = Each_ProductsSerializer()
+class StoreViewSet(ListAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    authentication_classes = []  # Uncomment this if you want to add authentication
+    permission_classes = [AllowAny]
     
-
 

@@ -5,7 +5,7 @@ from ..views.store_views import *
 
 router = DefaultRouter()
 router.register(r'messages', MessageViewSet)
-router.register(r'store', StoreViewSet)
+# router.register(r'store', StoreViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -13,4 +13,5 @@ urlpatterns = [
     path('login/', LoginViewSet.as_view(), name='login'),  # Add this line
     path('logout/', LogoutViewSet.as_view(), name='logout'),  # Add this line
     path('authorize/', AuthorizedViewSet.as_view(), name='authorize'),
+    path('store_products/', StoreViewSet.as_view(), name='store_products')
 ]

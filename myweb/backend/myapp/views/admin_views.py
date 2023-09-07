@@ -23,39 +23,60 @@ from rest_framework.permissions import AllowAny
 
 # 예를 들어, 위에서 언급한 ProductRegisterSerializer의 경우, 이미지 파일을 처리하기 위해 요청 객체가 필요합니다. 이 요청 객체는 context를 통해 Serializer에 전달됩니다.
 
-
 class ProductRegisterView(APIView):
     
-
     def post(self, request):
-        # Create a copy of the request data
-        print(request.data)
-        data = request.data.copy()
+        try:
+            print(request.data)
+        
+            # Create a copy of the request data
+            data = request.data.copy()
+            
+            # Rename the keys in the data
+            data['name'] = data.pop('productName')[0]
+            
+            # Create or get product type
+            product_type, _ = Product_Type.objects.get_or_create(name=data.pop('productType')[0])
+            data['type_id'] = product_type.id
+            
+            # Create or get product size
+            product_size, _ = Product_Size.objects.get_or_create(name=data.pop('productSize')[0])
+            data['size_id'] = product_size.id
 
-        # Rename the keys in the data
-        data['name'] = data.pop('productName')[0]
+            data['count'] = int(data.pop('productCount')[0])  # 변경됨
+            data['info'] = data.pop('productInfo')[0]  # 변경됨
+            data['price'] = int(data.pop('productPrice')[0])  # 변경됨
+            
+            # Add images
+            data['main_image'] = request.FILES.get('mainImage')
+            data['switching_image'] = request.FILES.get('switchingImage')
+            sub_images_list = [request.FILES.get(f'subImage{i}') for i in range(3) if f'subImage{i}' in request.FILES]
+            data['sub_images'] = sub_images_list[0]
 
-        product_type, _ = Product_Type.objects.get_or_create(name=data.pop('productType')[0])
-        data['type'] = product_type.id
+            print('sub : ', data['sub_images'])
 
-        product_size, _ = Product_Size.objects.get_or_create(name=data.pop('productSize')[0])
-        data['size'] = product_size.id
 
-        data['main_image'] = request.FILES.get('mainImage')
-        data['switching_image'] = request.FILES.get('switchingImage')
+            
+            # Initialize the serializer with the renamed data and context
+            print("serialized data : ", data)
+            serializer = ProductCreateSerializer(data=data, context={'request': request})
+            
+            # Validate and save the data
+            if serializer.is_valid():
+                print("Data is valid. Saving...")
+                print(f"Product type ID: {product_type.id}")
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+            # Log the validation errors
+            print("Validation errors:")
+            print(serializer.errors)
 
-        # Initialize the serializer with the renamed data and context
-        serializer = ProductSerializer(data=data, context={'request': request})
-
-        # Validate and save the data
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        # Log the validation errors
-        print(serializer.errors)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
 
 
