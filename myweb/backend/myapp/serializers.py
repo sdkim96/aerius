@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from .models import *
+from django.conf import settings
 
 # Django와 Django Rest Framework에서 Meta 클래스는 모델이나 시리얼라이저의 메타데이터를 정의하는 데 사용됩니다. 
 # 이 Meta 클래스는 Django 모델이나 시리얼라이저 클래스 내부에 중첩 클래스로서 정의되며, 해당 모델이나 시리얼라이저에 대한 추가적인 정보를 제공합니다.
 #모델의 Meta 클래스에서는 데이터베이스 테이블 이름, 정렬 순서, 기본 키 등을 정의할 수 있습니다. 예를 들어:
+
 
 
 # 1. User 모델 검증하는 클래스
