@@ -33,4 +33,6 @@ class CustomTokenAuthentication(BaseAuthentication):
         except User.DoesNotExist:
             raise AuthenticationFailed('No user matching this token was found.')
 
+        print(user)
+        print(token)
         return (user, token)

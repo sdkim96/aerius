@@ -64,15 +64,6 @@ class Address(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
-class Review(models.Model):
-    id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    contents = models.TextField()
-    image = models.URLField(max_length=2000, blank=True, null=True)
-
-
 class QnA(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=255)
@@ -90,9 +81,7 @@ class Notice(models.Model):
     image = models.URLField(max_length=2000, blank=True, null=True)
 
 
-class Discount(models.Model):
-    percent = models.IntegerField()
-
+# product와 관련된 스키마
 
 class Product_Size(models.Model):
     name = models.CharField(max_length=20)
@@ -107,9 +96,15 @@ class Product(models.Model):
     name = models.CharField(max_length=200)
     type = models.ForeignKey(Product_Type, on_delete=models.CASCADE)
     price = models.IntegerField(default=0)
+    info = models.TextField(default='')
+    is_preorder = models.BooleanField(default=False)
+
+
+class ProductSizeCount(models.Model):
+    product = models.ForeignKey(Product, related_name='sizes', on_delete=models.CASCADE)
     size = models.ForeignKey(Product_Size, on_delete=models.CASCADE)
     count = models.IntegerField(default=0)
-    info = models.TextField(default='')
+
 
 
 class ProductImage(models.Model):
@@ -117,14 +112,61 @@ class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
 
 
-class Each_Product(models.Model):
-    final_price = models.IntegerField()
-    discount = models.ForeignKey(Discount, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    review = models.ForeignKey('Review', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-
-
+# Cart 모델 추가
 class Cart(models.Model):
-    quantity = models.IntegerField()
-    each_product = models.ForeignKey('Each_Product', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Cart'
+        verbose_name_plural = 'Carts'
+
+
+# CartItem 모델 추가
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, related_name='cart_items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    size = models.CharField(max_length=50, default='')
+
+
+    class Meta:
+        verbose_name = 'Cart Item'
+        verbose_name_plural = 'Cart Items'
+
+
+class Order(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status_choices = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('shipped', 'Shipped'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    status = models.CharField(max_length=10, choices=status_choices, default='pending')
+    shipping_address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Order'
+        verbose_name_plural = 'Orders'
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, related_name='order_items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    size = models.ForeignKey(Product_Size, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Order Item'
+        verbose_name_plural = 'Order Items'
+
