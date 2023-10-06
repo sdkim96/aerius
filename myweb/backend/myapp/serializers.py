@@ -60,8 +60,8 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
+    size_count_mapping = serializers.JSONField(write_only=True, required=False)
     type_id = serializers.IntegerField(write_only=True)
-    size_id = serializers.IntegerField(write_only=True)
     main_image = serializers.ImageField(write_only=True)
     switching_image = serializers.ImageField(write_only=True)
     sub_images = serializers.ListField(
@@ -71,34 +71,42 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'type_id', 'price', 'size_id', 'count', 'info', 'main_image', 'switching_image', 'sub_images']
+        fields = ['id', 'name', 'type_id', 'price', 
+                   'info','main_image', 'switching_image', 
+                   'sub_images', 'size_count_mapping']
 
     def create(self, validated_data):
         type_id = validated_data.pop('type_id')
-        size_id = validated_data.pop('size_id')
         main_image_data = validated_data.pop('main_image')
         switching_image_data = validated_data.pop('switching_image')
         sub_images_data = validated_data.pop('sub_images')
+        size_count_mapping = validated_data.pop('size_count_mapping', {})
 
         product_type = Product_Type.objects.get(id=type_id)
-        product_size = Product_Size.objects.get(id=size_id)
 
+        # 이제 `validated_data`는 `Product` 모델에 직접 매핑되는 필드만 포함하고 있습니다.
         product = Product.objects.create(
             type=product_type,
-            size=product_size,
             **validated_data
         )
 
+        # 이후 로직은 이전과 동일합니다.
+        for size, count in size_count_mapping.items():
+            product_size, _ = Product_Size.objects.get_or_create(name=size)
+            ProductSizeCount.objects.create(
+                product=product,
+                size=product_size,
+                count=int(count)
+            )
+            
         ProductImage.objects.create(
             image=main_image_data,
             product=product
         )
-
         ProductImage.objects.create(
             image=switching_image_data,
             product=product
         )
-
         for sub_image_data in sub_images_data:
             ProductImage.objects.create(
                 image=sub_image_data,
@@ -108,12 +116,85 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         return product
 
 
+class ProductSizeCountSerializer(serializers.ModelSerializer):
+    size = ProductSizeSerializer(read_only=True)
+    
+    class Meta:
+        model = ProductSizeCount
+        fields = ['size', 'count']
+
 
 class ProductSerializer(serializers.ModelSerializer):
     type = ProductTypeSerializer(read_only=True)
-    size = ProductSizeSerializer(read_only=True)
+    sizes = ProductSizeCountSerializer(many=True, read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
     
     class Meta:
         model = Product
-        fields = ['id', 'name', 'type', 'price', 'size', 'count', 'info', 'images']
+        fields = ['id', 'name', 'type', 'price', 'info', 'images', 'sizes']
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField()
+    imageURL = serializers.SerializerMethodField()  # SerializerMethodField 사용
+    name = serializers.SerializerMethodField()
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    size = serializers.CharField()
+    quantity = serializers.IntegerField(read_only=True)  # 수량 필드 추가
+
+    class Meta:
+        model = CartItem
+        fields = ['product_id', 'imageURL', 'name', 'price', 'size', 'quantity']
+
+    def get_imageURL(self, obj):
+        if obj.product.images.first():
+            return obj.product.images.first().image.url
+        return None
+    
+    def get_name(self, obj):
+        return obj.product.name
+
+
+class CartSerializer(serializers.ModelSerializer):
+    cart_items = CartItemSerializer(many=True)
+
+    class Meta:
+        model = Cart
+        fields = ['id', 'user', 'cart_items']
+
+    def create(self, validated_data):
+        print("Entering CartSerializer create...")
+        
+        cart_items_data = validated_data['cart_items']  # 여기에서 .pop() 사용 안함
+        
+        cart, created = Cart.objects.get_or_create(user=self.context['request'].user, defaults=validated_data)
+        print(f"Cart object: {cart}, Created: {created}")
+        
+        for cart_item_data in cart_items_data:
+            product_id = int(cart_item_data['product_id'])  # 여기에서 .pop() 사용 안함
+            try:
+                product = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                raise serializers.ValidationError(f"Product with id {product_id} does not exist.")
+            
+            print(f"Processing product_id: {product_id}, product: {product}")
+            
+            cart_item, created = CartItem.objects.get_or_create(
+                cart=cart, product=product, size=cart_item_data['size'], defaults=cart_item_data)
+
+            print(f"CartItem object: {cart_item}, Created: {created}")
+
+            if not created:
+                cart_item.quantity += 1
+            else:
+                cart_item.price = product.price
+                cart_item.quantity = 1
+            cart_item.save()
+            print(f"Updated CartItem object: {cart_item}")
+
+        return cart
+
+
+
+
+

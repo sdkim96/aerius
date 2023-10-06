@@ -10,6 +10,7 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView, UpdateAPIView,
 from django.contrib.auth.decorators import login_required
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
+import json
 
 # Serializer에서 context를 사용하는 주된 이유는 Serializer가 현재 요청(request), 로그인된 사용자 등의 추가적인 정보를 알 필요가 있을 때입니다. Serializer 자체는 HTTP 요청에 대한 정보를 알지 못하기 때문에, 이 정보를 context를 통해 전달받습니다.
 
@@ -22,6 +23,7 @@ from rest_framework.permissions import AllowAny
 # 다른 추가적인 정보가 필요한 경우: context는 다른 추가적인 정보를 전달하는 데도 사용할 수 있습니다. 이 정보는 Serializer의 동작에 영향을 미칠 수 있습니다.
 
 # 예를 들어, 위에서 언급한 ProductRegisterSerializer의 경우, 이미지 파일을 처리하기 위해 요청 객체가 필요합니다. 이 요청 객체는 context를 통해 Serializer에 전달됩니다.
+
 
 class ProductRegisterView(APIView):
     
@@ -38,14 +40,18 @@ class ProductRegisterView(APIView):
             # Create or get product type
             product_type, _ = Product_Type.objects.get_or_create(name=data.pop('productType')[0])
             data['type_id'] = product_type.id
-            
-            # Create or get product size
-            product_size, _ = Product_Size.objects.get_or_create(name=data.pop('productSize')[0])
-            data['size_id'] = product_size.id
 
-            data['count'] = int(data.pop('productCount')[0])  # 변경됨
-            data['info'] = data.pop('productInfo')[0]  # 변경됨
-            data['price'] = int(data.pop('productPrice')[0])  # 변경됨
+            # Convert 'sizeCountMapping' from JSON string to Python dictionary
+            size_count_mapping_str = data.pop('sizeCountMapping', '[]')[0]  # 변경된 부분
+            # size_count_mapping = json.loads(size_count_mapping_str)
+            data['size_count_mapping'] = size_count_mapping_str
+            print(data['size_count_mapping'])
+
+            # 이후 로직에서 size_count_mapping 딕셔너리를 사용하세요.
+            # 예를 들어, 여기에 ProductSizeCount 모델에 데이터를 저장하는 로직을 추가할 수 있습니다.
+            
+            data['info'] = data.pop('productInfo')[0]
+            data['price'] = int(data.pop('productPrice')[0].replace(",", ""))
             
             # Add images
             data['main_image'] = request.FILES.get('mainImage')
@@ -53,31 +59,24 @@ class ProductRegisterView(APIView):
             sub_images_list = [request.FILES.get(f'subImage{i}') for i in range(3) if f'subImage{i}' in request.FILES]
             data['sub_images'] = sub_images_list[0]
 
-            print('sub : ', data['sub_images'])
-
 
             
             # Initialize the serializer with the renamed data and context
-            print("serialized data : ", data)
             serializer = ProductCreateSerializer(data=data, context={'request': request})
             
             # Validate and save the data
             if serializer.is_valid():
-                print("Data is valid. Saving...")
-                print(f"Product type ID: {product_type.id}")
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-            # Log the validation errors
-            print("Validation errors:")
-            print(serializer.errors)
+            else:
+                print("Validation errors:", serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An unexpected error occurred: {e}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+
 
 
 class ProductReadallView(ListAPIView):
