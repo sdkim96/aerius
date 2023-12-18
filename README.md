@@ -18,10 +18,10 @@ Django의 세션 관리 기능을 활용하여 각 사용자의 장바구니 상
 REST API를 통해 장바구니에 상품 추가, 삭제, 조회 기능을 제공합니다.
 
 ## 기술 스택
-- Django: 백엔드 애플리케이션 프레임워크
-- Django REST Framework: RESTful API 개발을 위한 강력한 툴킷
-- Azure MySQL: 클라우드 기반의 데이터베이스 서버
-- JWT (JSON Web Tokens): 사용자 인증 및 정보 전달을 위한 보안 토큰
+### Django: 백엔드 애플리케이션 프레임워크
+### Django REST Framework: RESTful API 개발을 위한 강력한 툴킷
+### Azure MySQL: 클라우드 기반의 데이터베이스 서버
+### JWT (JSON Web Tokens): 사용자 인증 및 정보 전달을 위한 보안 토큰
 
 ## 데이터베이스 구성
 Azure MySQL 데이터베이스를 사용하여 데이터의 안정성과 접근성을 보장합니다.
